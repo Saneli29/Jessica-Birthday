@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Birthday Card</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0e6f6;
+            margin: 0;
+        }
+        #card {
+            width: 300px;
+            height: 400px;
+            background-color: white;
+            border: 2px solid #d3d3d3;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            text-align: center;
+            padding: 20px;
+            overflow: hidden;
+            transition: transform 0.5s ease;
+        }
+        #card.open {
+            transform: rotateY(180deg);
+        }
+        #message {
+            font-size: 18px;
+            margin-top: 50px;
+        }
+        #cake {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="card" onclick="openCard()">
+        <div id="message">
+            Happy Birthday Jessica,<br>
+            I love you so much my friend.<br>
+            I wish you nothing but the best in this life thing.
+        </div>
+        <div id="cake">
+            🎂<br>
+            <span id="candle">🕯️</span>
+        </div>
+    </div>
+
+    <script>
+        function openCard() {
+            document.getElementById('card').classList.toggle('open');
+            setTimeout(showCake, 500);
+        }
+
+        function showCake() {
+            document.getElementById('cake').style.display = 'block';
+            initMic();
+        }
+
+        function initMic() {
+            const candle = document.getElementById('candle');
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const mediaStreamSource = audioContext.createMediaStreamSource(stream);
+                        const analyser = audioContext.createAnalyser();
+                        mediaStreamSource.connect(analyser);
+                        analyser.fftSize = 256;
+                        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                        function detectBlow() {
+                            analyser.getByteFrequencyData(dataArray);
+                            let sum = 0;
+                            for (let i = 0; i < dataArray.length; i++) {
+                                sum += dataArray[i];
+                            }
+                            let average = sum / dataArray.length;
+                            if (average > 30) {
+                                candle.textContent = ' ';
+                            }
+                            requestAnimationFrame(detectBlow);
+                        }
+                        detectBlow();
+                    })
+                    .catch(err => console.error('Error accessing microphone', err));
+            } else {
+                console.error('getUserMedia not supported on your browser!');
+            }
+        }
+    </script>
+</body>
+</html>
